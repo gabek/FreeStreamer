@@ -113,6 +113,7 @@ public:
     void audioQueueBuffersEmpty();
     void audioQueueInitializationFailed();
     void audioQueueFinishedPlayingPacket();
+    void samplesAvailable(AudioBufferList *samples, UInt32 frames, AudioStreamPacketDescription description);
     
     /* Input_Stream_Delegate */
     void streamIsReadyRead();

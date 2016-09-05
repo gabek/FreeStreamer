@@ -56,6 +56,8 @@ private:
     State m_state;
     
     AudioQueueRef m_outAQ;                                           // the audio queue
+    AudioQueueProcessingTapRef m_aqTap; // the audio queue tap
+    AudioStreamBasicDescription m_tapFormat = {0};
     
     AudioQueueBufferRef *m_audioQueueBuffer;              // audio queue buffers
     AudioStreamPacketDescription *m_packetDescs; // packet descriptions for enqueuing audio
@@ -84,9 +86,12 @@ private:
     void setCookiesForStream(AudioFileStreamID inAudioFileStream);
     void setState(State state);
     void enqueueBuffer();
+    void setupAudioProcessingTap();
+    void setupAUGraph();
     
     static void audioQueueOutputCallback(void *inClientData, AudioQueueRef inAQ, AudioQueueBufferRef inBuffer);
     static void audioQueueIsRunningCallback(void *inClientData, AudioQueueRef inAQ, AudioQueuePropertyID inID);
+    static void audioQueueTapCallback(void *inClientData, AudioQueueProcessingTapRef inAQTap, UInt32 inNumberFrames, AudioTimeStamp *ioTimeStamp, UInt32 *ioFlags, UInt32 *outNumberFrames, AudioBufferList *ioData);
 };
     
 class Audio_Queue_Delegate {
@@ -95,6 +100,7 @@ public:
     virtual void audioQueueBuffersEmpty() = 0;
     virtual void audioQueueInitializationFailed() = 0;
     virtual void audioQueueFinishedPlayingPacket() = 0;
+    virtual void samplesAvailable(AudioBufferList *samples, UInt32 frames, AudioStreamPacketDescription description) = 0;
 };
 
 } // namespace astreamer

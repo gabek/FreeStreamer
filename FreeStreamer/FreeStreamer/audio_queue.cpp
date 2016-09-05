@@ -39,6 +39,7 @@ Audio_Queue::Audio_Queue()
     : m_delegate(0),
     m_state(IDLE),
     m_outAQ(0),
+    m_aqTap(0),
     m_fillBufferIndex(0),
     m_bytesFilled(0),
     m_packetsFilled(0),
@@ -246,6 +247,14 @@ AudioQueueLevelMeterState Audio_Queue::levels()
     AudioQueueGetProperty(m_outAQ, kAudioQueueProperty_CurrentLevelMeterDB, &levelMeter, &levelMeterSize);
     return levelMeter;
 }
+
+void Audio_Queue::setupAudioProcessingTap()
+{
+    OSStatus err = AudioQueueProcessingTapNew(m_outAQ, audioQueueTapCallback, this, kAudioQueueProcessingTap_Siphon|kAudioQueueProcessingTap_PostEffects, 0, &m_tapFormat, &m_aqTap);
+    if (err) {
+        AQ_TRACE("%s: error in AudioQueueProcessingTapNew\n", __PRETTY_FUNCTION__);
+    }
+}
     
 void Audio_Queue::init()
 {
@@ -266,6 +275,9 @@ void Audio_Queue::init()
         
         return;
     }
+    
+    // Create the tap
+    setupAudioProcessingTap();
     
     Stream_Configuration *configuration = Stream_Configuration::configuration();
     
@@ -411,10 +423,16 @@ void Audio_Queue::cleanup()
         setState(IDLE);
     }
     
+    if (AudioQueueProcessingTapDispose(m_aqTap) != 0) {
+        AQ_TRACE("%s: AudioQueueProcessingTapDispose failed!\n", __PRETTY_FUNCTION__);
+    }
+    
     if (AudioQueueDispose(m_outAQ, true) != 0) {
         AQ_TRACE("%s: AudioQueueDispose failed!\n", __PRETTY_FUNCTION__);
     }
+    
     m_outAQ = 0;
+    m_aqTap = 0;
     m_fillBufferIndex = m_bytesFilled = m_packetsFilled = m_buffersUsed = 0;
     
     for (size_t i=0; i < config->bufferCount; i++) {
@@ -491,6 +509,12 @@ void Audio_Queue::enqueueBuffer()
     pthread_mutex_unlock(&m_bufferInUseMutex);
 }
     
+void Audio_Queue::audioQueueTapCallback(void *inClientData, AudioQueueProcessingTapRef inAQTap, UInt32 inNumberFrames, AudioTimeStamp *ioTimeStamp, UInt32 *ioFlags, UInt32 *outNumberFrames, AudioBufferList *ioData)
+{
+    Audio_Queue *audioQueue = static_cast<Audio_Queue*>(inClientData);
+    audioQueue->m_delegate->samplesAvailable(ioData, inNumberFrames, *audioQueue->m_packetDescs);
+}
+    
 // this is called by the audio queue when it has finished decoding our data. 
 // The buffer is now free to be reused.
 void Audio_Queue::audioQueueOutputCallback(void *inClientData, AudioQueueRef inAQ, AudioQueueBufferRef inBuffer)
@@ -561,6 +585,6 @@ void Audio_Queue::audioQueueIsRunningCallback(void *inClientData, AudioQueueRef 
     } else {
         audioQueue->setState(IDLE);
     }
-}    
+}
     
 } // namespace astreamer

@@ -754,6 +754,23 @@ void Audio_Stream::audioQueueStateChanged(Audio_Queue::State state)
     }
 }
     
+void Audio_Stream::samplesAvailable(AudioBufferList *samples, UInt32 frames, AudioStreamPacketDescription description)
+{    
+    Audio_Stream *THIS = (Audio_Stream *)this;
+
+    AudioBufferList outputBufferList;
+    outputBufferList.mNumberBuffers = 1;
+    outputBufferList.mBuffers[0].mNumberChannels = THIS->m_dstFormat.mChannelsPerFrame;
+    outputBufferList.mBuffers[0].mDataByteSize = THIS->m_outputBufferSize;
+    outputBufferList.mBuffers[0].mData = THIS->m_outputBuffer;
+    
+    UInt32 ioOutputDataPackets = THIS->m_outputBufferSize / THIS->m_dstFormat.mBytesPerPacket;
+
+    if (THIS->m_delegate) {
+        THIS->m_delegate->samplesAvailable(samples, frames, description);
+    }
+}
+    
 void Audio_Stream::audioQueueBuffersEmpty()
 {
     AS_TRACE("%s: enter\n", __PRETTY_FUNCTION__);
@@ -1092,7 +1109,7 @@ void Audio_Stream::streamMetaDataAvailable(std::map<CFStringRef,CFStringRef> met
     if (m_delegate) {
         m_delegate->audioStreamMetaDataAvailable(metaData);
     }
-}
+}  
     
 void Audio_Stream::streamMetaDataByteSizeAvailable(UInt32 sizeInBytes)
 {
@@ -1655,9 +1672,11 @@ void Audio_Stream::decodeSinglePacket(CFRunLoopTimerRef timer, void *info)
         
         const UInt32 nFrames = outputBufferList.mBuffers[0].mDataByteSize / THIS->m_dstFormat.mBytesPerFrame;
         
-        if (THIS->m_delegate) {
-            THIS->m_delegate->samplesAvailable(&outputBufferList, nFrames, description);
-        }
+        // Disabled because the samplesAvailable callback is instead going to
+        // take place via the AudioTap.
+        //if (THIS->m_delegate) {
+        //    THIS->m_delegate->samplesAvailable(&outputBufferList, nFrames, description);
+        //}
         
         Stream_Configuration *config = Stream_Configuration::configuration();
         
