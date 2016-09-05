@@ -87,7 +87,6 @@ private:
     void setState(State state);
     void enqueueBuffer();
     void setupAudioProcessingTap();
-    void setupAUGraph();
     
     static void audioQueueOutputCallback(void *inClientData, AudioQueueRef inAQ, AudioQueueBufferRef inBuffer);
     static void audioQueueIsRunningCallback(void *inClientData, AudioQueueRef inAQ, AudioQueuePropertyID inID);
