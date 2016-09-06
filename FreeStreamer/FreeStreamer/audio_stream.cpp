@@ -758,14 +758,6 @@ void Audio_Stream::samplesAvailable(AudioBufferList *samples, UInt32 frames, Aud
 {    
     Audio_Stream *THIS = (Audio_Stream *)this;
 
-    AudioBufferList outputBufferList;
-    outputBufferList.mNumberBuffers = 1;
-    outputBufferList.mBuffers[0].mNumberChannels = THIS->m_dstFormat.mChannelsPerFrame;
-    outputBufferList.mBuffers[0].mDataByteSize = THIS->m_outputBufferSize;
-    outputBufferList.mBuffers[0].mData = THIS->m_outputBuffer;
-    
-    UInt32 ioOutputDataPackets = THIS->m_outputBufferSize / THIS->m_dstFormat.mBytesPerPacket;
-
     if (THIS->m_delegate) {
         THIS->m_delegate->samplesAvailable(samples, frames, description);
     }
