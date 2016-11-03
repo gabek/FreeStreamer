@@ -128,6 +128,11 @@ void Audio_Queue::stop()
     stop(true);
 }
     
+Audio_Queue::State Audio_Queue::state()
+{
+    return m_state;
+}
+    
 float Audio_Queue::volume()
 {
     if (!m_outAQ) {
