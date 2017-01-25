@@ -300,6 +300,7 @@ public:
 - (void)setVolume:(float)volume;
 - (void)setPlayRate:(float)playRate;
 - (astreamer::AS_Playback_Position)playbackPosition;
+- (UInt64)audioDataByteCount;
 - (float)durationInSeconds;
 - (void)bitrateAvailable;
 @end
@@ -501,14 +502,21 @@ public:
 
 - (void)playFromOffset:(FSSeekByteOffset)offset
 {
-    astreamer::Input_Stream_Position position;
-    position.start = offset.start;
-    position.end   = offset.end;
+    _wasPaused = NO;
     
-    _audioStream->open(&position);
-    
-    _audioStream->setSeekOffset(offset.position);
-    _audioStream->setContentLength(offset.end);
+    if (_audioStream->isPreloading()) {
+        _audioStream->seekToOffset(offset.position);
+        _audioStream->setPreloading(false);
+    } else {
+        astreamer::Input_Stream_Position position;
+        position.start = offset.start;
+        position.end   = offset.end;
+        
+        _audioStream->open(&position);
+        
+        _audioStream->setSeekOffset(offset.position);
+        _audioStream->setContentLength(offset.end);
+    }
     
     if (!_reachability) {
         _reachability = [Reachability reachabilityForInternetConnection];
@@ -1121,6 +1129,11 @@ public:
     return _audioStream->playbackPosition();
 }
 
+- (UInt64)audioDataByteCount
+{
+    return _audioStream->audioDataByteCount();
+}
+
 - (float)durationInSeconds
 {
     return _audioStream->durationInSeconds();
@@ -1391,6 +1404,13 @@ public:
     NSAssert([NSThread isMainThread], @"FSAudioStream.contentLength needs to be called in the main thread");
     
     return [_private contentLength];
+}
+
+- (UInt64)audioDataByteCount
+{
+    NSAssert([NSThread isMainThread], @"FSAudioStream.audioDataByteCount needs to be called in the main thread");
+    
+    return [_private audioDataByteCount];
 }
 
 - (void)preload
