@@ -1,6 +1,6 @@
 /*
  * This file is part of the FreeStreamer project,
- * (C)Copyright 2011-2016 Matias Muhonen <mmu@iki.fi> 穆马帝
+ * (C)Copyright 2011-2018 Matias Muhonen <mmu@iki.fi> 穆马帝
  * See the file ''LICENSE'' for using the code.
  *
  * https://github.com/muhku/FreeStreamer
@@ -91,7 +91,7 @@ CFStringRef File_Stream::contentType()
             contentType = CFSTR("audio/mpeg");
         } else if (CFStringCompare(suffix, CFSTR(".m4a"), 0) == kCFCompareEqualTo) {
             contentType = CFSTR("audio/x-m4a");
-        } else if (CFStringCompare(suffix, CFSTR(".mp3"), 0) == kCFCompareEqualTo) {
+        } else if (CFStringCompare(suffix, CFSTR(".mp4"), 0) == kCFCompareEqualTo) {
             contentType = CFSTR("audio/mp4");
         } else if (CFStringCompare(suffix, CFSTR(".aac"), 0) == kCFCompareEqualTo) {
             contentType = CFSTR("audio/aac");

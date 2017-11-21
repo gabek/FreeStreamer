@@ -1,6 +1,6 @@
 /*
  * This file is part of the FreeStreamer project,
- * (C)Copyright 2011-2016 Matias Muhonen <mmu@iki.fi> 穆马帝
+ * (C)Copyright 2011-2018 Matias Muhonen <mmu@iki.fi> 穆马帝
  * See the file ''LICENSE'' for using the code.
  *
  * https://github.com/muhku/FreeStreamer
@@ -61,12 +61,9 @@
          */
         [self.audioController pause];
         _paused = NO;
-    } else {
-        /*
-         * Not paused, just directly call play.
-         */
-        [self.audioController play];
     }
+    
+    [self.audioController play];
     
     [self.playButton setHidden:YES];
     [self.pauseButton setHidden:NO];

@@ -1,6 +1,6 @@
 /*
  * This file is part of the FreeStreamer project,
- * (C)Copyright 2011-2016 Matias Muhonen <mmu@iki.fi> 穆马帝
+ * (C)Copyright 2011-2018 Matias Muhonen <mmu@iki.fi> 穆马帝
  * See the file ''LICENSE'' for using the code.
  *
  * https://github.com/muhku/FreeStreamer
@@ -17,12 +17,12 @@
 /**
  * The minor version of the current release.
  */
-#define FREESTREAMER_VERSION_MINOR          7
+#define FREESTREAMER_VERSION_MINOR          8
 
 /**
  * The reversion of the current release
  */
-#define FREESTREAMER_VERSION_REVISION       2
+#define FREESTREAMER_VERSION_REVISION       0
 
 /**
  * Follow this notification for the audio stream state changes.
