@@ -78,22 +78,8 @@ static NSInteger sortCacheObjects(id co1, id co2, void *keyForSorting)
         [systemVersion appendString:@"OS X"];
 #endif
 
-#if (TARGET_OS_SIMULATOR)
-        /* Seems that audio doesn't run properly with lower latency buffers on the simulator
-           with later Xcode / iOS Simulator versions */
-        self.bufferCount    = 8;
-        self.bufferSize     = 32768;
-        
-    #if (DEBUG)
-        static dispatch_once_t once;
-        dispatch_once(&once, ^{
-            NSLog(@"Notice: FreeStreamer running on simulator, low latency audio not available!");
-        });
-    #endif
-#else
         self.bufferCount    = 64;
         self.bufferSize     = 8192;
-#endif
         self.maxPacketDescs = 512;
         self.httpConnectionBufferSize = 8192;
         self.outputSampleRate = 44100;
@@ -367,8 +353,10 @@ public:
     
     _delegate = nil;
     
-    delete _audioStream, _audioStream = nil;
-    delete _observer, _observer = nil;
+    delete _audioStream;
+    _audioStream = nil;
+    delete _observer;
+    _observer = nil;
     
     // Clean up the disk cache.
     
@@ -762,6 +750,7 @@ public:
     
 #if (__IPHONE_OS_VERSION_MIN_REQUIRED >= 60000)
     NSNumber *interruptionType = [[notification userInfo] valueForKey:AVAudioSessionInterruptionTypeKey];
+    NSNumber *interruptionResume = [[notification userInfo] valueForKey:AVAudioSessionInterruptionOptionKey];
     if ([interruptionType intValue] == AVAudioSessionInterruptionTypeBegan) {
         if ([self isPlaying] && !_wasPaused) {
             self.wasInterrupted = YES;
@@ -785,29 +774,35 @@ public:
         if (self.wasInterrupted) {
             self.wasInterrupted = NO;
             
-            @synchronized (self) {
-                if (self.configuration.automaticAudioSessionHandlingEnabled) {
-                    [[AVAudioSession sharedInstance] setActive:YES error:nil];
+            if ([interruptionResume intValue] == AVAudioSessionInterruptionOptionShouldResume) {
+                @synchronized (self) {
+                    if (self.configuration.automaticAudioSessionHandlingEnabled) {
+                        [[AVAudioSession sharedInstance] setActive:YES error:nil];
+                    }
+                    fsAudioStreamPrivateActiveSessions[[NSNumber numberWithUnsignedLong:(unsigned long)self]] = @"";
                 }
-                fsAudioStreamPrivateActiveSessions[[NSNumber numberWithUnsignedLong:(unsigned long)self]] = @"";
-            }
-            
-            if (self.wasContinuousStream) {
+                
+                if (self.wasContinuousStream) {
 #if defined(DEBUG) || (TARGET_IPHONE_SIMULATOR)
-                NSLog(@"FSAudioStream: Interruption ended. Continuous stream. Starting the playback.");
+                    NSLog(@"FSAudioStream: Interruption ended. Continuous stream. Starting the playback.");
 #endif
-                /*
-                 * Resume playing.
-                 */
-                [self play];
+                    /*
+                     * Resume playing.
+                     */
+                    [self play];
+                } else {
+#if defined(DEBUG) || (TARGET_IPHONE_SIMULATOR)
+                    NSLog(@"FSAudioStream: Interruption ended. Continuous stream. Playing from the offset");
+#endif
+                    /*
+                     * Resume playing.
+                     */
+                   [self playFromOffset:_lastSeekByteOffset];
+                }
             } else {
 #if defined(DEBUG) || (TARGET_IPHONE_SIMULATOR)
-                NSLog(@"FSAudioStream: Interruption ended. Continuous stream. Playing from the offset");
+                NSLog(@"FSAudioStream: Interruption ended. Continuous stream. Not resuming.");
 #endif
-                /*
-                 * Resume playing.
-                 */
-               [self playFromOffset:_lastSeekByteOffset];
             }
         }
     }
@@ -1049,7 +1044,8 @@ public:
     
     [self endBackgroundTask];
     
-    [_reachability stopNotifier], _reachability = nil;
+    [_reachability stopNotifier];
+    _reachability = nil;
 }
 
 - (BOOL)isPlaying
@@ -1536,7 +1532,8 @@ public:
         unsigned u = pos.playbackTimeInSeconds;
         unsigned s,m;
     
-        s = u % 60, u /= 60;
+        s = u % 60;
+        u /= 60;
         m = u;
     
         pos.minute = m;
@@ -1563,7 +1560,8 @@ public:
     
         unsigned s,m;
     
-        s = u % 60, u /= 60;
+        s = u % 60;
+        u /= 60;
         m = u;
         
         pos.minute = m;
